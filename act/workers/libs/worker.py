@@ -3,6 +3,7 @@
 import argparse
 import inspect
 import os
+import re
 import smtplib
 import socket
 import sys
@@ -10,6 +11,7 @@ from email.mime.text import MIMEText
 from logging import error, warning
 from typing import Any, Optional, Text
 
+import arrow
 import requests
 import urllib3
 
@@ -22,6 +24,13 @@ CONFIG_NAME = "actworkers.ini"
 
 class UnknownResult(Exception):
     """UnknownResult is used in API request (not 200 result)"""
+
+    def __init__(self, *args: Any) -> None:
+        Exception.__init__(self, *args)
+
+
+class UnknownFormat(Exception):
+    """UnknownFormat format for functions"""
 
     def __init__(self, *args: Any) -> None:
         Exception.__init__(self, *args)
@@ -182,6 +191,42 @@ def fetch_json(url: str, proxy_string: Optional[str], timeout: int = 60, verify_
         raise UnknownResult(errmsg.format(req))
 
     return req.json()
+
+
+def parse_time_expression(expr: Text) -> arrow.Arrow:
+    """
+    Parse expression on format:
+
+        now                # now
+        now - 24h          # 20 hours ago
+        now - 1d           # 1 day ago
+        now - 2w           # 2 weeks ago
+        now - 30s          # 30 seconds ago
+        YYMMDD[HHMMSS]     # Date/time specified
+                           # If HHMMSS is not given
+                             - 0s will be inserted
+    """
+    if re.search("(now|w|d|h|m|s)", expr, re.I):
+        expr = re.sub("s", "*1", expr, re.I)
+        expr = re.sub("m", "*60", expr, re.I)
+        expr = re.sub("h", "*3600", expr, re.I)
+        expr = re.sub("d", "*3600*24", expr, re.I)
+        expr = re.sub(r'([^o])w', r'\1*3600*24*7', expr, re.I)
+        expr = re.sub("now", str(arrow.now().timestamp), expr, re.I)
+
+        try:
+            ts = arrow.get(eval(expr))
+        except SyntaxError:
+            raise UnknownFormat("Could not parse date: {}".format(expr))
+    else:
+        # Assume time string on format YYMMDD[HHMMSS]
+        expr += "0" * (12 - len(expr))  # add 0s
+        try:
+            ts = arrow.get(expr, "YYMMDDHHMMSS")
+        except ValueError:
+            raise UnknownFormat("Could not parse date: {}".format(expr))
+
+    return ts
 
 
 def sendmail(smtphost: str, sender: str, recipient: str, subject: str, body: str) -> None:

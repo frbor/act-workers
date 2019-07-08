@@ -31,6 +31,7 @@ setup(
             'act-scio = act.workers.scio:main_log_error',
             'act-uploader = act.workers.generic_uploader:main_log_error',
             'act-url-shorter-unpack = act.workers.url_shorter_unpack:main_log_error',
+            'act-search-graph = act.workers.search_graph:main_log_error',
             'act-shadowserver-asn = act.workers.shadowserver_asn:main_log_error',
             'act-veris = act.workers.veris:main_log_error',
             'act-worker-config = act.workers.worker_config:main',
