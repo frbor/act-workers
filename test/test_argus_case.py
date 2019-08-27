@@ -5,7 +5,17 @@ import act.api
 from act.workers.libs import argus
 
 
+def test_refang() -> None:
+    """ refang tests """
+
+    assert argus.refang_uri("hxxp://www[.]mnemonic[.]no") == "http://www.mnemonic.no"
+    assert argus.refang_uri("hxxp://www.mnemonic.no/hxxp") == "http://www.mnemonic.no/hxxp"
+    assert argus.refang_uri("hXXps://www(.)mnemonic(.)no") == "https://www.mnemonic.no"
+    assert argus.refang_uri("hxxp://www[.]mnemonic[.]no/abc%2fdef") == "http://www.mnemonic.no/abc/def"
+
 # pylint: disable=too-many-locals
+
+
 def test_argus_case_facts(capsys, caplog) -> None:  # type: ignore
     """ Test for argus case facts, by comparing to captue of stdout """
     with open("test/data/argus-event.json") as argus_event:
@@ -28,7 +38,8 @@ def test_argus_case_facts(capsys, caplog) -> None:  # type: ignore
 
     prop = event["properties"]
     uri1 = event["uri"]
-    uri2 = prop["request.uri"].replace("hXXp://", "http://").replace("[.]", ".")
+    uri2 = "http://test-domain2.com/path.cgi"
+    uri3 = "http://test-domain3.com/abc"
     incident_id = "ARGUS-{}".format(event["associatedCase"]["id"])
     event_id = "ARGUS-{}".format(event["id"])
 
@@ -53,6 +64,7 @@ def test_argus_case_facts(capsys, caplog) -> None:  # type: ignore
         api.fact("name", "Infected host").source("incident", incident_id),
         api.fact("observedIn", "event").source("uri", uri1).destination("event", event_id),
         api.fact("observedIn", "event").source("uri", uri2).destination("event", event_id),
+        api.fact("observedIn", "event").source("uri", uri3).destination("event", event_id),
         api.fact("componentOf").source("fqdn", "test-domain.com").destination("uri", uri1),
         api.fact("componentOf").source("path", "/path.cgi").destination("uri", uri1),
         api.fact("scheme", "http").source("uri", uri1),

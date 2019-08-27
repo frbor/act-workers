@@ -30,7 +30,7 @@ def refang_uri(uri: Text) -> Text:
         .replace("[.]", ".") \
         .replace("(.)", ".") \
         .replace("{.}", ".") \
-        .replace("%sf", "/")
+        .replace("%2f", "/")
 
 
 def handle_fact(fact: act.api.fact.Fact, output_format: Text) -> None:
@@ -222,7 +222,8 @@ def handle_argus_event(
         uris.add(refang_uri(event["uri"]))
 
     if properties["request.uri"]:
-        uris.add(refang_uri(properties["request.uri"]))
+        for uri in properties["request.uri"].split("\n"):
+            uris.add(refang_uri(uri))
 
     # Fact: uri -> event. uri can be either in top level field "uri" or property "request.uri"
     for uri in uris:
