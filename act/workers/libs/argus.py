@@ -155,7 +155,8 @@ def handle_argus_event_ip(
         uri = "{}://{}".format(scheme, address)
 
         # Facts: uri components
-        handle_uri(actapi, uri, output_format=output_format)
+        if not handle_uri(actapi, uri, output_format=output_format):
+            continue
 
         # Fact: uri -> event
         handle_fact(
