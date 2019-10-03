@@ -1,11 +1,11 @@
 """ Tests for worker """
 import sys
-import act.api
 
+import _pytest
 from act.workers.libs import worker
 
 
-def test_args_origin_name(monkeypatch) -> None:
+def test_args_origin_name(monkeypatch: _pytest.monkeypatch.MonkeyPatch) -> None:
     """ test argument origin-name """
 
     origin_name = "test-origin"
@@ -23,7 +23,8 @@ def test_args_origin_name(monkeypatch) -> None:
 
     assert fact.origin.name == origin_name
 
-def test_args_origin_id(monkeypatch) -> None:
+
+def test_args_origin_id(monkeypatch: _pytest.monkeypatch.MonkeyPatch) -> None:
     """ test argument origin-id """
 
     origin_id = "00000000-0000-0000-0000-000000000001"
