@@ -133,7 +133,7 @@ def main() -> None:
                 e = 0
 
                 act.api.helpers.handle_fact(
-                    actapi.fact("hasTitle", event.info)
+                    actapi.fact("name", event.info)
                     .source("report", str(event.uuid)),
                     output_format=args.output_format)
 
