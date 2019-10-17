@@ -156,7 +156,7 @@ def main() -> None:
                         continue
                     try:
                         act.api.helpers.handle_fact(
-                            actapi.fact("mentions", attribute.act_type)
+                            actapi.fact("mentions")
                             .source("report", str(event.uuid))
                             .destination(attribute.act_type, attribute.value),
                             output_format=args.output_format)
