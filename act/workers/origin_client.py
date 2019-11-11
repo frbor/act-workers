@@ -17,7 +17,7 @@ DEFAULT_TRUST = 0.8
 
 def parseargs() -> argparse.ArgumentParser:
     """ Parse arguments """
-    parser = worker.parseargs('PDNS enrichment')
+    parser = worker.parseargs('Manage origins')
     parser.add_argument("--list", action="store_true", help="List origins")
     parser.add_argument("--add", action="store_true", help="List origins")
     parser.add_argument("--delete", action="store_true", help="List origins")
