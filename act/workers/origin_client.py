@@ -19,6 +19,10 @@ def parseargs() -> argparse.ArgumentParser:
     parser.add_argument("--list", action="store_true", help="List origins")
     parser.add_argument("--add", action="store_true", help="List origins")
     parser.add_argument("--delete", action="store_true", help="List origins")
+
+    # Trust is converted to float before sending a request to the platform
+    # and since this value can come from an ini file (where it will be a string)
+    # We keep the value as a string here
     parser.add_argument("--default-trust", default="0.8", help="Default trust")
 
     return parser
