@@ -12,8 +12,6 @@ from typing import Text
 import act.api
 from act.workers.libs import worker
 
-DEFAULT_TRUST = 0.8
-
 
 def parseargs() -> argparse.ArgumentParser:
     """ Parse arguments """
@@ -21,6 +19,7 @@ def parseargs() -> argparse.ArgumentParser:
     parser.add_argument("--list", action="store_true", help="List origins")
     parser.add_argument("--add", action="store_true", help="List origins")
     parser.add_argument("--delete", action="store_true", help="List origins")
+    parser.add_argument("--default-trust", default="0.8", help="Default trust")
 
     return parser
 
@@ -31,7 +30,7 @@ def fatal(msg: Text, exit_code: int = 1) -> None:
     sys.exit(exit_code)
 
 
-def add_origin(actapi: act.api.Act) -> None:
+def add_origin(actapi: act.api.Act, default_trust: Text) -> None:
     sys.stdout.write("Origin name: ")
     name = input()
     sys.stdout.write("Origin description: ")
@@ -42,7 +41,7 @@ def add_origin(actapi: act.api.Act) -> None:
     organization = input()
 
     if not trust:
-        trust = DEFAULT_TRUST
+        trust = default_trust
 
     try:
         trust = float(trust)
@@ -80,7 +79,7 @@ def origin_handler(actapi: act.api.Act, args: argparse.Namespace) -> None:
                 print(origin)
 
         if args.add:
-            add_origin(actapi)
+            add_origin(actapi, default_trust=args.default_trust)
 
         if args.delete:
             actapi.api_delete("v1/origin/uuid/{}".format(args.origin_id))
