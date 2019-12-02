@@ -3,6 +3,7 @@
 import argparse
 import inspect
 import os
+import re
 import smtplib
 import socket
 import sys
@@ -10,6 +11,7 @@ from email.mime.text import MIMEText
 from logging import error, warning
 from typing import Any, Optional, Text
 
+import arrow
 import requests
 import urllib3
 
@@ -18,10 +20,18 @@ from act.workers.libs import config
 
 CONFIG_ID = "actworkers"
 CONFIG_NAME = "actworkers.ini"
+TIME_EXPRESSION_RE = re.compile(r'now\s*-\s*(\d+)(w|d|h|m|s)')
 
 
 class UnknownResult(Exception):
     """UnknownResult is used in API request (not 200 result)"""
+
+    def __init__(self, *args: Any) -> None:
+        Exception.__init__(self, *args)
+
+
+class UnknownFormat(Exception):
+    """UnknownFormat is used on unknown parsing formats"""
 
     def __init__(self, *args: Any) -> None:
         Exception.__init__(self, *args)
@@ -157,6 +167,56 @@ def fatal(message: Text, exit_code: int = 1) -> None:
     sys.stderr.write(message.strip() + "\n")
     error(message.strip())
     sys.exit(exit_code)
+
+
+def parse_time_expression(expr: Text) -> arrow.Arrow:
+    """
+    Parse expression on format:
+
+        now                # now
+        now - 24h          # 20 hours ago
+        now - 1d           # 1 day ago
+        now - 2w           # 2 weeks ago
+        now - 30s          # 30 seconds ago
+        YYMMDD[HHMMSS]     # Date/time specified
+                           # If HHMMSS is not given
+                             - 0s will be inserted
+    """
+
+    if expr == "now":
+        return arrow.utcnow()
+
+    if TIME_EXPRESSION_RE.search(expr):
+        ts = arrow.utcnow()
+
+        match = TIME_EXPRESSION_RE.search(expr)
+        multiplier = int(match.group(1))
+        period = match.group(2)
+
+        if period == "s":  # Seconds
+            return ts.shift(seconds=-multiplier)
+
+        if period == "m":  # Minutes
+            return ts.shift(minutes=-multiplier)
+
+        if period == "h":  # Hours
+            return ts.shift(hours=-multiplier)
+
+        if period == "d":  # Days
+            return ts.shift(days=-multiplier)
+
+        if period == "w":  # week = 7 days
+            return ts.shift(days=-(7 * multiplier))
+
+        raise UnknownFormat("Could not parse date: {}".format(expr))
+
+    # Assume time string on format YYMMDD[HHMMSS]
+    expr += "0" * (12 - len(expr))  # add 0s
+    try:
+        print(expr)
+        return arrow.get(expr, "YYMMDDHHmmss")
+    except ValueError:
+        raise UnknownFormat("Could not parse date: {}".format(expr))
 
 
 def fetch_json(url: str, proxy_string: Optional[str], timeout: int = 60, verify_https: bool = False) -> Any:
