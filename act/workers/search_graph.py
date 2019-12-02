@@ -23,8 +23,8 @@ VALID_SEARCH_OPTIONS = {
     if arg not in "self"}
 
 SEARCH_OPTIONS_FUNC: Dict = {
-    "after": lambda ts: worker.parse_time_expression(ts).format("YYYY-MM-DDTHH:MM:SS") + "Z",
-    "before": lambda ts: worker.parse_time_expression(ts).format("YYYY-MM-DDTHH:MM:SS") + "Z",
+    "after": lambda ts: worker.parse_time_expression(ts).format("YYYY-MM-DDTHH:mm:ss") + "Z",
+    "before": lambda ts: worker.parse_time_expression(ts).format("YYYY-MM-DDTHH:mm:ss") + "Z",
 }
 
 
