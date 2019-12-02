@@ -36,6 +36,7 @@ setup(
             'act-veris = act.workers.veris:main_log_error',
             'act-worker-config = act.workers.worker_config:main',
             'act-origin = act.workers.origin_client:main',
+            'act-search-graph= act.workers.search_graph:main_log_error',
         ]
     },
 
