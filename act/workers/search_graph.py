@@ -5,6 +5,7 @@
 import argparse
 import concurrent.futures
 import configparser
+import datetime
 import inspect
 import os
 import re
@@ -12,10 +13,12 @@ import sys
 from logging import error, info, warning
 from typing import Dict, Text
 
-import arrow
+import dateparser
 
 import act.api
 from act.workers.libs import worker
+
+ARGUS_TIME_FORMAT = "%Y-%m-%dT%H:%M:%SZ"
 
 # Inspect object search function to get list of valid arguments and their defaults
 VALID_SEARCH_OPTIONS = {
@@ -23,8 +26,8 @@ VALID_SEARCH_OPTIONS = {
     if arg not in "self"}
 
 SEARCH_OPTIONS_FUNC: Dict = {
-    "after": lambda ts: worker.parse_time_expression(ts).format("YYYY-MM-DDTHH:mm:ss") + "Z",
-    "before": lambda ts: worker.parse_time_expression(ts).format("YYYY-MM-DDTHH:mm:ss") + "Z",
+    "before": lambda ts: dateparser.parse(ts).strftime(ARGUS_TIME_FORMAT),
+    "after": lambda ts: dateparser.parse(ts).strftime(ARGUS_TIME_FORMAT),
 }
 
 
@@ -80,7 +83,7 @@ def process(actapi: act.api.Act, name: Text, options: Dict, workers: int) -> Non
     weburl = options.get("weburl", "https://act-eu1.mnemonic.no")
     minfacts = int(options.get("minfacts", 1))
 
-    f = open("{}-{}.result".format(arrow.now().format("YYYY-MM-DD-HH-mm"), name), "w")
+    f = open("{}-{}.result".format(datetime.datetime.now().strftime("%Y-%m-%d-%H-%m"), name), "w")
 
     search_options = {}
 
@@ -99,6 +102,8 @@ def process(actapi: act.api.Act, name: Text, options: Dict, workers: int) -> Non
             search_options[key] = [value.strip() for value in re.split(r'(?<!\\),', value) if value]
         else:
             search_options[key] = value
+
+    info("Search options: {}".format(**search_options)
 
     objects = actapi.object_search(**search_options)
     if objects.size != objects.count:
