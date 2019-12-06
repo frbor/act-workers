@@ -19,6 +19,7 @@ This will install scripts for all workers:
 * act-argus-case
 * act-attack
 * act-country-regions
+* act-export
 * act-misp-feeds
 * act-mnemonic-pdns
 * act-origin
@@ -144,6 +145,22 @@ All workers requires python version >= 3.5 and the act-api library:
 * [act-api](https://github.com/mnemonic-no/act-api-python) (act-api on [pypi](https://pypi.org/project/act-api/))
 
 In addition some of the libraries might have additional requirements. See requirements.txt for a full list of all requirements.
+
+# Export data
+
+You can use `act-export` to export facts to file:
+
+```bash
+$ act-export --user-id <USER-ID> \
+    --act-baseurl <BASEURL> \
+    --start "48 hours ago"
+    --fact-type mentions
+    --object-type fqdn,ipv4
+    --loglevel warning
+    --limit 500000
+```
+
+--start and --end supports the format of [dateparser](https://dateparser.readthedocs.io).
 
 # Local development
 
