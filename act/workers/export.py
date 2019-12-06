@@ -10,7 +10,7 @@ import re
 import sys
 import traceback
 from collections import MutableMapping
-from logging import error, info, warn
+from logging import error, info, warning
 from typing import Any, Dict, List, Text, cast
 
 import dateparser
@@ -63,7 +63,8 @@ def parseargs() -> argparse.Namespace:
     """ Parse arguments """
     parser = worker.parseargs('Export worker')
 
-    parser.add_argument("--remove-id", action="store_true", default=False, help="Remove IDs (id, objectID)")
+    parser.add_argument("--remove-id", action="store_true", default=False,
+                        help="Remove IDs (id, objectID)")
     parser.add_argument("--object-type",
                         help="Limit query by object type (comma separated list of OR values)")
     parser.add_argument("--object-value",
@@ -128,9 +129,13 @@ def process(actapi: act.api.Act, args: argparse.Namespace) -> None:
         serialized_fact = fact.serialize()
 
         if args.exclude_object_value_re:
-            if fact.source_object and re.search(args.exclude_object_value_re, fact.source_object.value):
+            if fact.source_object and re.search(
+                    args.exclude_object_value_re,
+                    fact.source_object.value):
                 continue
-            if fact.destination_object and re.search(args.exclude_object_value_re, fact.destination_object.value):
+            if fact.destination_object and re.search(
+                    args.exclude_object_value_re,
+                    fact.destination_object.value):
                 continue
 
         if args.remove_id:
@@ -139,7 +144,8 @@ def process(actapi: act.api.Act, args: argparse.Namespace) -> None:
         fhandle.write(json.dumps(serialized_fact, sort_keys=True) + "\n")
 
     if count == args.limit:
-        warn("Recieved {} facts (same number as limit). You have most likely hit the limit")
+        warning("Recieved {} facts (same number as limit). ".format(count) +
+                "You have most likely hit the limit")
 
     if args.filename:
         fhandle.close()
@@ -153,10 +159,7 @@ def main_log_error() -> None:
 
     actapi = worker.init_act(args)
     try:
-        process(
-            actapi,
-            args
-        )
+        process(actapi, args)
     except Exception:
         error("Unhandled exception: {}".format(traceback.format_exc()))
         raise
