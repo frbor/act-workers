@@ -18,16 +18,18 @@ import dateparser
 import act.api
 from act.workers.libs import worker
 
-ARGUS_TIME_FORMAT = "%Y-%m-%dT%H:%M:%SZ"
+ACT_TIME_FORMAT = "%Y-%m-%dT%H:%M:%SZ"
 
 # Inspect object search function to get list of valid arguments and their defaults
 VALID_SEARCH_OPTIONS = {
-    arg: parameter.default for arg, parameter in inspect.signature(act.api.Act.object_search).parameters.items()
-    if arg not in "self"}
+    arg: parameter.default
+    for arg, parameter in inspect.signature(act.api.Act.object_search).parameters.items()
+    if arg not in "self"
+}
 
 SEARCH_OPTIONS_FUNC: Dict = {
-    "before": lambda ts: dateparser.parse(ts).strftime(ARGUS_TIME_FORMAT),
-    "after": lambda ts: dateparser.parse(ts).strftime(ARGUS_TIME_FORMAT),
+    "before": lambda ts: dateparser.parse(ts).strftime(ACT_TIME_FORMAT),
+    "after": lambda ts: dateparser.parse(ts).strftime(ACT_TIME_FORMAT),
 }
 
 
@@ -35,10 +37,14 @@ def parseargs() -> argparse.ArgumentParser:
     """ Parse arguments """
     parser = worker.parseargs('Search Graph')
     parser.add_argument('--search-jobs', help="Search jobs (ini-file)")
-    parser.add_argument('--workers', type=int, default=4, help="Number of workers for graph search")
+    parser.add_argument('--output-path', help="Output-path (default=.)", default=".")
+    parser.add_argument(
+        '--workers',
+        type=int,
+        default=4,
+        help="Number of parallel workers for graph search")
 
     return parser
-
 
 def parse_search_jobs(config_filename: Text) -> Dict:
     "Parse config with search jobs and return dictionary of section name and options"
@@ -71,7 +77,7 @@ def traverse(api: act.api.Act, name: Text, weburl: Text, obj: act.api.obj.Object
     return output
 
 
-def process(actapi: act.api.Act, name: Text, options: Dict, workers: int) -> None:
+def process(actapi: act.api.Act, output_path: Text, name: Text, options: Dict, workers: int) -> None:
     if "query" not in options:
         error("No query specified in {}, skipping".format(name))
         return
@@ -83,13 +89,18 @@ def process(actapi: act.api.Act, name: Text, options: Dict, workers: int) -> Non
     weburl = options.get("weburl", "https://act-eu1.mnemonic.no")
     minfacts = int(options.get("minfacts", 1))
 
-    f = open("{}-{}.result".format(datetime.datetime.now().strftime("%Y-%m-%d-%H-%m"), name), "w")
+    filename = os.path.join(
+        output_path,
+        "{}-{}.result".format(datetime.datetime.now().strftime("%Y-%m-%d-%H-%m"), name))
+
+    f = open(filename, "w")
 
     search_options = {}
 
     for key, value in options.items():
         if key in ("query", "blacklist", "matches", "weburl", "minfacts"):
-            continue  # Query/blacklist/matches is not part of object search options, but passed on to traverse
+            # Query/blacklist/matches is not part of object search options, but passed on to traverse
+            continue
 
         if key not in VALID_SEARCH_OPTIONS:
             error("Illegal query option ({}) specified in {}, skipping".format(key, name))
@@ -103,7 +114,7 @@ def process(actapi: act.api.Act, name: Text, options: Dict, workers: int) -> Non
         else:
             search_options[key] = value
 
-    info("Search options: {}".format(**search_options)
+    info("Search options: {}".format(search_options))
 
     objects = actapi.object_search(**search_options)
     if objects.size != objects.count:
@@ -154,7 +165,7 @@ def main_log_error() -> None:
 
     try:
         for name, options in parse_search_jobs(args.search_jobs).items():
-            process(actapi, name, options, args.workers)
+            process(actapi, args.output_path, name, options, args.workers)
 
     except Exception:
         error("Unhandled exception", exc_info=True)
