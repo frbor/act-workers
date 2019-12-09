@@ -46,6 +46,7 @@ def parseargs() -> argparse.ArgumentParser:
 
     return parser
 
+
 def parse_search_jobs(config_filename: Text) -> Dict:
     "Parse config with search jobs and return dictionary of section name and options"
     config = configparser.ConfigParser()
@@ -116,7 +117,12 @@ def process(actapi: act.api.Act, output_path: Text, name: Text, options: Dict, w
 
     info("Search options: {}".format(search_options))
 
-    objects = actapi.object_search(**search_options)
+    try:
+        objects = actapi.object_search(**search_options)
+    except Exception:
+        error("Fatal: object search exception: {}".format(search_options), exc_info=True)
+        return
+
     if objects.size != objects.count:
         warning("Recieved only {}/{} objects".format(objects.size, objects.count))
 
