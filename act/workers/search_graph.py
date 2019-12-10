@@ -37,7 +37,10 @@ def parseargs() -> argparse.ArgumentParser:
     """ Parse arguments """
     parser = worker.parseargs('Search Graph')
     parser.add_argument('--search-jobs', help="Search jobs (ini-file)")
-    parser.add_argument('--output-path', help="Output-path (default=.)", default=".")
+    parser.add_argument(
+        '--output-path',
+        help="Output-path for result files (default=.)",
+        default=".")
     parser.add_argument(
         '--workers',
         type=int,
@@ -86,7 +89,7 @@ def process(actapi: act.api.Act, output_path: Text, name: Text, options: Dict, w
     # Extract query as separate option
     query = options["query"]
     blacklist = options.get("blacklist", "").split(",")
-    matches = options.get("matches", r'.*')
+    object_value_re = options.get("object_value_re", r'.*')
     weburl = options.get("weburl", "https://act-eu1.mnemonic.no")
     minfacts = int(options.get("minfacts", 1))
 
@@ -96,11 +99,13 @@ def process(actapi: act.api.Act, output_path: Text, name: Text, options: Dict, w
 
     f = open(filename, "w")
 
+    # Construct search options from ini file
     search_options = {}
 
     for key, value in options.items():
-        if key in ("query", "blacklist", "matches", "weburl", "minfacts"):
-            # Query/blacklist/matches is not part of object search options, but passed on to traverse
+        if key in ("query", "blacklist", "object_value_re", "weburl", "minfacts"):
+            # Query/blacklist/object_value_re is not part of object search options
+            # but passed on to traverse
             continue
 
         if key not in VALID_SEARCH_OPTIONS:
@@ -124,23 +129,27 @@ def process(actapi: act.api.Act, output_path: Text, name: Text, options: Dict, w
         return
 
     if objects.size != objects.count:
-        warning("Recieved only {}/{} objects".format(objects.size, objects.count))
+        warning("Received only {}/{} objects".format(objects.size, objects.count))
+
+    info("Received {} objects".format(objects.size))
 
     with concurrent.futures.ProcessPoolExecutor(max_workers=workers) as executor:
 
         future_traverse = {
             executor.submit(traverse, actapi, name, weburl, obj, query, minfacts): str(obj)
             for obj in objects
-            if (str(obj) not in blacklist) and re.search(matches, obj.value)
+            if (str(obj) not in blacklist) and re.search(object_value_re, obj.value)
         }
 
-        for future in concurrent.futures.as_completed(future_traverse):
+        for idx, future in enumerate(concurrent.futures.as_completed(future_traverse)):
             obj = future_traverse[future]
             try:
                 data = future.result()
             except Exception:
                 error("traverse exception: {}".format(obj), exc_info=True)
                 continue
+
+            info("Progress: {}/{}".format(idx, objects.size))
 
             if data:
                 f.write(data + "\n\n")
