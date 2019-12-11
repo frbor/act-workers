@@ -97,6 +97,8 @@ def process(actapi: act.api.Act, output_path: Text, name: Text, options: Dict, w
         output_path,
         "{}-{}.result".format(datetime.datetime.now().strftime("%Y-%m-%d-%H-%m"), name))
 
+    info("Result will be written to {}".format(filename))
+
     f = open(filename, "w")
 
     # Construct search options from ini file
@@ -149,7 +151,7 @@ def process(actapi: act.api.Act, output_path: Text, name: Text, options: Dict, w
                 error("traverse exception: {}".format(obj), exc_info=True)
                 continue
 
-            info("Progress: {}/{}".format(idx, objects.size))
+            info("Progress: {}/{}".format(idx+1, objects.size))
 
             if data:
                 f.write(data + "\n\n")
