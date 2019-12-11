@@ -18,8 +18,6 @@ import dateparser
 import act.api
 from act.workers.libs import worker
 
-ACT_TIME_FORMAT = "%Y-%m-%dT%H:%M:%SZ"
-
 # Inspect object search function to get list of valid arguments and their defaults
 VALID_SEARCH_OPTIONS = {
     arg: parameter.default
@@ -28,8 +26,8 @@ VALID_SEARCH_OPTIONS = {
 }
 
 SEARCH_OPTIONS_FUNC: Dict = {
-    "before": lambda ts: dateparser.parse(ts).strftime(ACT_TIME_FORMAT),
-    "after": lambda ts: dateparser.parse(ts).strftime(ACT_TIME_FORMAT),
+    "before": lambda ts: dateparser.parse(ts).strftime(act.api.ACT_TIME_FORMAT),
+    "after": lambda ts: dateparser.parse(ts).strftime(act.api.ACT_TIME_FORMAT),
 }
 
 
