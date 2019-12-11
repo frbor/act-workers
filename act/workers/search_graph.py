@@ -22,7 +22,7 @@ from act.workers.libs import worker
 VALID_SEARCH_OPTIONS = {
     arg: parameter.default
     for arg, parameter in inspect.signature(act.api.Act.object_search).parameters.items()
-    if arg not in "self"
+    if arg != "self"
 }
 
 SEARCH_OPTIONS_FUNC: Dict = {
