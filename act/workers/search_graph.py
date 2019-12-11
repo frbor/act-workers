@@ -11,7 +11,7 @@ import os
 import re
 import sys
 from logging import error, info, warning
-from typing import Dict, Text
+from typing import Any, Dict, Text
 
 import dateparser
 
@@ -19,7 +19,7 @@ import act.api
 from act.workers.libs import worker
 
 # Inspect object search function to get list of valid arguments and their defaults
-VALID_SEARCH_OPTIONS = {
+VALID_SEARCH_OPTIONS: Dict[str, Any] = {
     arg: parameter.default
     for arg, parameter in inspect.signature(act.api.Act.object_search).parameters.items()
     if arg != "self"
@@ -88,7 +88,7 @@ def process(actapi: act.api.Act, output_path: Text, name: Text, options: Dict, w
     query = options["query"]
     blacklist = options.get("blacklist", "").split(",")
     object_value_re = options.get("object_value_re", r'.*')
-    weburl = options.get("weburl", "https://act-eu1.mnemonic.no")
+    weburl = options.get("weburl", actapi.config.act_baseurl)
     minfacts = int(options.get("minfacts", 1))
 
     filename = os.path.join(
@@ -97,65 +97,63 @@ def process(actapi: act.api.Act, output_path: Text, name: Text, options: Dict, w
 
     info("Result will be written to {}".format(filename))
 
-    f = open(filename, "w")
+    with open(filename, "w") as f:
 
-    # Construct search options from ini file
-    search_options = {}
+        # Construct search options from ini file
+        search_options = {}
 
-    for key, value in options.items():
-        if key in ("query", "blacklist", "object_value_re", "weburl", "minfacts"):
-            # Query/blacklist/object_value_re is not part of object search options
-            # but passed on to traverse
-            continue
-
-        if key not in VALID_SEARCH_OPTIONS:
-            error("Illegal query option ({}) specified in {}, skipping".format(key, name))
-            return
-
-        if key in SEARCH_OPTIONS_FUNC:
-            search_options[key] = SEARCH_OPTIONS_FUNC[key](value)
-        elif VALID_SEARCH_OPTIONS[key] == []:
-            # Split values on comma (except escaped commas)
-            search_options[key] = [value.strip() for value in re.split(r'(?<!\\),', value) if value]
-        else:
-            search_options[key] = value
-
-    info("Search options: {}".format(search_options))
-
-    try:
-        objects = actapi.object_search(**search_options)
-    except Exception:
-        error("Fatal: object search exception: {}".format(search_options), exc_info=True)
-        return
-
-    if objects.size != objects.count:
-        warning("Received only {}/{} objects".format(objects.size, objects.count))
-
-    info("Received {} objects".format(objects.size))
-
-    with concurrent.futures.ProcessPoolExecutor(max_workers=workers) as executor:
-
-        future_traverse = {
-            executor.submit(traverse, actapi, name, weburl, obj, query, minfacts): str(obj)
-            for obj in objects
-            if (str(obj) not in blacklist) and re.search(object_value_re, obj.value)
-        }
-
-        for idx, future in enumerate(concurrent.futures.as_completed(future_traverse)):
-            obj = future_traverse[future]
-            try:
-                data = future.result()
-            except Exception:
-                error("traverse exception: {}".format(obj), exc_info=True)
+        for key, value in options.items():
+            if key in ("query", "blacklist", "object_value_re", "weburl", "minfacts"):
+                # Query/blacklist/object_value_re is not part of object search options
+                # but passed on to traverse
                 continue
 
-            info("Progress: {}/{}".format(idx+1, objects.size))
+            if key not in VALID_SEARCH_OPTIONS:
+                error("Illegal query option ({}) specified in {}, skipping".format(key, name))
+                return
 
-            if data:
-                f.write(data + "\n\n")
-                f.flush()
+            if key in SEARCH_OPTIONS_FUNC:
+                search_options[key] = SEARCH_OPTIONS_FUNC[key](value)
+            elif VALID_SEARCH_OPTIONS[key] == []:
+                # Split values on comma (except escaped commas)
+                search_options[key] = [value.strip() for value in re.split(r'(?<!\\),', value) if value]
+            else:
+                search_options[key] = value
 
-    f.close()
+        info("Search options: {}".format(search_options))
+
+        try:
+            objects = actapi.object_search(**search_options)
+        except Exception:
+            error("Fatal: object search exception: {}".format(search_options), exc_info=True)
+            return
+
+        if objects.size != objects.count:
+            warning("Received only {}/{} objects".format(objects.size, objects.count))
+
+        info("Received {} objects".format(objects.size))
+
+        with concurrent.futures.ProcessPoolExecutor(max_workers=workers) as executor:
+
+            future_traverse = {
+                executor.submit(traverse, actapi, name, weburl, obj, query, minfacts): str(obj)
+                for obj in objects
+                if (str(obj) not in blacklist) and re.search(object_value_re, obj.value)
+            }
+
+            for idx, future in enumerate(concurrent.futures.as_completed(future_traverse)):
+                obj = future_traverse[future]
+                try:
+                    data = future.result()
+                except Exception:
+                    error("traverse exception: {}".format(obj), exc_info=True)
+                    continue
+
+                info("Progress: {}/{}".format(idx + 1, objects.size))
+
+                if data:
+                    f.write(data + "\n\n")
+                    f.flush()
 
 
 def main_log_error() -> None:
