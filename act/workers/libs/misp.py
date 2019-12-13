@@ -3,9 +3,10 @@ import uuid
 import json
 import time
 import re
-import ipaddress
 
 from typing import Optional, Text, Any, Tuple, Dict, Callable
+
+from act.workers.libs import objmapper
 
 class ThreatLevelID(enum.Enum):
     """2.2.1.5.  threat_level_id
@@ -182,98 +183,35 @@ class Attribute(object):  # attributeattributes in misp babel
         return "{0} {1}:{2}".format(self.id, self.act_type, self.value)
 
 
-def hash_f(x: Text) -> Tuple[Text, Text]:
-    return "hash", x.lower()
-
-
-def certificate_f(x: Text) -> Tuple[Text, Text]:
-    return "certificate", x.lower()
-
-
-def threat_actor_f(x: Text) -> Tuple[Text, Text]:
-    return "threatActor", x.lower()
-
-
-def campaign_f(x: Text) -> Tuple[Text, Text]:
-    return "campaign", x.lower()
-
-
-def email_f(x: Text) -> Tuple[Text, Text]:
-    return "uri", "email://{}".format(x.lower())
-
-
-def person_f(x: Text) -> Tuple[Text, Text]:
-    return "person", x.lower()
-
-
-def organization_f(x: Text) -> Tuple[Text, Text]:
-    return "organization", x.lower()
-
-
-def fqdn_f(x: Text) -> Tuple[Text, Text]:
-    return "fqdn", x.lower()
-
-
-def ip_f(x: Text) -> Tuple[Optional[Text], Optional[Text]]:
-    try:
-        addrv6 = ipaddress.IPv6Address(x)
-        return "ipv6", str(addrv6.exploded)
-    except ipaddress.AddressValueError:
-        try:
-            ipaddress.IPv4Address(x)
-            return "ipv4", x
-        except ipaddress.AddressValueError:
-            pass
-
-    return None, None
-
-
-def uri_f(x: Text) -> Tuple[Text, Text]:
-    if not x.startswith("http"):
-        x = "http://{0}".format(x)
-    return "uri", x
-
-
-def user_agent_f(x: Text) -> Tuple[Text, Text]:
-    return "userAgent", x
-
-
-def vulnerability_f(x: Text) -> Tuple[Text, Text]:
-    return "vulnerability", x.lower()
-
-
-def mutex_f(x: Text) -> Tuple[Text, Text]:
-    return "mutex", x
-
 
 map_misp_to_act: Dict[Text, Callable[[Text], Tuple[Optional[Text], Optional[Text]]]] = {
-    "authentihash": hash_f,
-    "campaign-name": campaign_f,
-    "hostname": fqdn_f,
-    "domain": fqdn_f,
-    "impfuzzy": hash_f,
-    "imphash": hash_f,
-    "ip-dst": ip_f,
-    "ip-src": ip_f,
-    "link": uri_f,
-    "md5": hash_f,
-    "mutex": mutex_f,
-    "sha1": hash_f,
-    "sha224": hash_f,
-    "sha256": hash_f,
-    "sha384": hash_f,
-    "sha512/224": hash_f,
-    "sha512/256": hash_f,
-    "sha512": hash_f,
-    "ssdeep": hash_f,
-    "threat-actor": threat_actor_f,
-    "url": uri_f,
-    "user-agent": user_agent_f,
-    "vulnerability": vulnerability_f,
-    "whois-registrant-email": email_f,
-    "whois-registrant-name": person_f,
-    "whois-registrar": organization_f,
-    "x509-fingerprint-sha1": certificate_f,
+    "authentihash": objmapper.hash_f,
+    "campaign-name": objmapper.campaign_f,
+    "hostname": objmapper.fqdn_f,
+    "domain": objmapper.fqdn_f,
+    "impfuzzy": objmapper.hash_f,
+    "imphash": objmapper.hash_f,
+    "ip-dst": objmapper.ip_f,
+    "ip-src": objmapper.ip_f,
+    "link": objmapper.uri_f,
+    "md5": objmapper.hash_f,
+    "mutex": objmapper.mutex_f,
+    "sha1": objmapper.hash_f,
+    "sha224": objmapper.hash_f,
+    "sha256": objmapper.hash_f,
+    "sha384": objmapper.hash_f,
+    "sha512/224": objmapper.hash_f,
+    "sha512/256": objmapper.hash_f,
+    "sha512": objmapper.hash_f,
+    "ssdeep": objmapper.hash_f,
+    "threat-actor": objmapper.threat_actor_f,
+    "url": objmapper.uri_f,
+    "user-agent": objmapper.user_agent_f,
+    "vulnerability": objmapper.vulnerability_f,
+    "whois-registrant-email": objmapper.email_f,
+    "whois-registrant-name": objmapper.person_f,
+    "whois-registrar": objmapper.organization_f,
+    "x509-fingerprint-sha1": objmapper.certificate_f,
 }
 
 

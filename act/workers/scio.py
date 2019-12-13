@@ -7,19 +7,15 @@ import json
 import sys
 import traceback
 from logging import error, warning
-from typing import Dict, List, Text, cast
+from typing import Callable, Dict, Optional, Set, Text, Tuple, cast
 
 import act.api
 from act.api.helpers import handle_fact, handle_uri
-from act.workers.libs import worker
+from act.workers.libs import objmapper, worker
 
 EXTRACT_GEONAMES = ["countries", "regions", "regions-derived",
                     "sub-regions", "sub-regions-derived"]
 
-
-EXTRACT_INDICATORS = ["md5", "sha1", "sha256",
-                      "fqdn", "ipv4", "ipv6",
-                      "msid", "cve", "uri", "ipv4net"]
 
 SCIO_GEONAMES_ACT_MAP = {
     "countries": "country",
@@ -29,13 +25,17 @@ SCIO_GEONAMES_ACT_MAP = {
     "sub-regions-derived": "subRegion"
 }
 
-SCIO_INDICATOR_ACT_MAP = {
-    "md5": "hash",
-    "sha1": "hash",
-    "sha256": "hash",
-    "ipv4net": "ipv4Network",
-    "cve": "vulnerability",
-    "msid": "vulnerability",
+MAP_SCIO_INDICATOR_TO_ACT: Dict[Text, Callable[[Text], Tuple[Optional[Text], Optional[Text]]]] = {
+    "cve": objmapper.vulnerability_f,
+    "fqdn": objmapper.fqdn_f,
+    "ipv4net": objmapper.ipv4net_f,
+    "ipv4": objmapper.ip_f,
+    "ipv6": objmapper.ip_f,
+    "md5": objmapper.hash_f,
+    "msid": objmapper.vulnerability_f,
+    "sha1": objmapper.hash_f,
+    "sha256": objmapper.hash_f,
+    "uri": objmapper.uri_f,
 }
 
 
@@ -51,18 +51,17 @@ def get_scio_report() -> Dict:
     return cast(Dict, json.load(sys.stdin))
 
 
-def report_mentions_fact(actapi: act.api.Act, object_type: Text, object_values: List[Text], report_id: Text, output_format: Text) -> None:
+def report_mentions_fact(actapi: act.api.Act, object_type: Text, object_value: Text, report_id: Text, output_format: Text) -> None:
     """Add mentions fact to report"""
-    for value in list(set(object_values)):
-        try:
-            handle_fact(
-                actapi.fact("mentions")
-                .source("report", report_id)
-                .destination(object_type, value),
-                output_format
-            )
-        except act.api.base.ResponseError as e:
-            error("Unable to create linked fact: %s" % e)
+    try:
+        handle_fact(
+            actapi.fact("mentions")
+            .source("report", report_id)
+            .destination(object_type, object_value),
+            output_format
+        )
+    except act.api.base.ResponseError as e:
+        error("Unable to create linked fact: %s" % e)
 
 
 def add_to_act(actapi: act.api.Act, doc: Dict, output_format: Text = "json") -> None:
@@ -83,19 +82,21 @@ def add_to_act(actapi: act.api.Act, doc: Dict, output_format: Text = "json") -> 
         error("Unable to create fact: %s" % e)
 
     # Loop over all items under indicators in report
-    for scio_indicator_type in EXTRACT_INDICATORS:
+    for scio_indicator_type in MAP_SCIO_INDICATOR_TO_ACT.keys():
         # Get object type from ACT (default to object type in SCIO)
-        act_indicator_type = SCIO_INDICATOR_ACT_MAP.get(scio_indicator_type,
-                                                        scio_indicator_type)
-        report_mentions_fact(
-            actapi,
-            act_indicator_type,
-            indicators.get(scio_indicator_type, []),
-            report_id,
-            output_format)
+
+        for value in indicators.get(scio_indicator_type, []):
+            (act_type, act_value) = MAP_SCIO_INDICATOR_TO_ACT[scio_indicator_type](value)
+
+            report_mentions_fact(
+                actapi,
+                act_type,
+                act_value,
+                report_id,
+                output_format)
 
     # For SHA256, create content object
-    for sha256 in list(set(indicators.get("sha256", []))):
+    for sha256 in set(indicators.get("sha256", [])):
         handle_fact(
             actapi.fact("represents")
             .source("hash", sha256)
@@ -104,7 +105,7 @@ def add_to_act(actapi: act.api.Act, doc: Dict, output_format: Text = "json") -> 
         )
 
     # Add emails as URI components
-    for email in list(set(indicators.get("email", []))):
+    for email in set(indicators.get("email", [])):
         try:
             email_uri = "email://{}".format(email)
             handle_uri(actapi, email_uri, output_format=output_format)
@@ -121,7 +122,7 @@ def add_to_act(actapi: act.api.Act, doc: Dict, output_format: Text = "json") -> 
             warning("Unable to create facts from uri: {}".format(email_uri))
 
     # Add all URI components
-    for uri in list(set(indicators.get("uri", []))):
+    for uri in set(indicators.get("uri", [])):
         try:
             handle_uri(actapi, uri, output_format=output_format)
         except act.api.base.ValidationError as err:
@@ -133,28 +134,31 @@ def add_to_act(actapi: act.api.Act, doc: Dict, output_format: Text = "json") -> 
     for location_type in EXTRACT_GEONAMES:
         locations = doc.get("geonames", {}).get(location_type, [])
 
+        for location in locations:
+            report_mentions_fact(
+                actapi,
+                SCIO_GEONAMES_ACT_MAP[location_type],
+                location,
+                report_id,
+                output_format)
+
+    # Threat actor
+    for threat_actor in doc.get("threat-actor", {}).get("names", []):
         report_mentions_fact(
             actapi,
-            SCIO_GEONAMES_ACT_MAP[location_type],
-            locations,
+            "threatActor",
+            threat_actor,
             report_id,
             output_format)
 
-    # Threat actor
-    report_mentions_fact(
-        actapi,
-        "threatActor",
-        doc.get("threat-actor", {}).get("names", []),
-        report_id,
-        output_format)
-
     # Tools
-    report_mentions_fact(
-        actapi,
-        "tool",
-        [tool.lower() for tool in doc.get("tools", {}).get("names", [])],
-        report_id,
-        output_format)
+    for tool in [tool.lower() for tool in doc.get("tools", {}).get("names", [])]:
+        report_mentions_fact(
+            actapi,
+            "tool",
+            tool,
+            report_id,
+            output_format)
 
     # Sector
     report_mentions_fact(
