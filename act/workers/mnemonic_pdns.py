@@ -28,7 +28,7 @@ def parseargs() -> argparse.ArgumentParser:
     parser.add_argument('--pdns-timeout', dest='timeout', type=int,
                         default=299, help="Timeout")
     parser.add_argument('--pdns-batch-size', dest='pdns_batch_size', type=int,
-                        default=500, help="Batch size of pdns queries")
+                        default=1000, help="Batch size of pdns queries")
     parser.add_argument('--pdns-apikey', dest='apikey',
                         help="PassiveDNS API key")
 
@@ -41,7 +41,7 @@ def pdns_query(
         query: str,
         timeout: int,
         proxy_string: Optional[Text] = None,
-        batch_size: int = 500) -> Generator[Dict[str, Any], None, None]:
+        batch_size: int = 1000) -> Generator[Dict[str, Any], None, None]:
     """Query the passivedns result of an address.
     pdns_baseurl - the url to the passivedns api (https://api.mnemonic.no)
     apikey - PassiveDNS API key with the passivedns role (minimum)
@@ -83,7 +83,7 @@ def process(
         timeout: int = 299,
         proxy_string: Optional[Text] = None,
         output_format: Text = "json",
-        batch_size: int = 500) -> None:
+        batch_size: int = 1000) -> None:
     """Read queries from stdin, resolve each one through passivedns
     printing generic_uploader data to stdout"""
 

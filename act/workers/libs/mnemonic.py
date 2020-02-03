@@ -15,7 +15,7 @@ def batch_query(
         timeout: int = 299,
         json_params: Optional[Dict] = None,
         proxy_string: Optional[Text] = None,
-        batch_size: int = 250) -> Generator[Dict[Text, Any], None, None]:
+        batch_size: int = 1000) -> Generator[Dict[Text, Any], None, None]:
     """ Execute query until we have all results """
 
     offset = 0
