@@ -85,7 +85,7 @@ def handle_reports(config: Dict[Text, Any], incident: Dict[Text, Any], incident_
             if not re.search(config["hash_url_matching"], ref):
                 continue
 
-            report_hash = config["db_cache"].get(ref)
+            report_hash = config["db_cache"].query_download_update(ref)
 
             if report_hash:
                 handle_fact(

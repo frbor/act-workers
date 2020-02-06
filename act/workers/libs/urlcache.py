@@ -6,11 +6,25 @@ import os
 import sqlite3
 import time
 from logging import info
-from typing import Dict, Optional, Text, Tuple
+from typing import Dict, NamedTuple, Optional, Text
 
 import requests
 
 from act.workers.libs import worker
+
+
+class CacheResponse(NamedTuple):
+    """ Response object from cache query """
+    status_code: Optional[int]
+    report_hash: Optional[Text]
+    added: datetime.datetime
+
+
+class UrlContentHash(NamedTuple):
+    """ Response object with status code and sha256 hash """
+    status_code: Optional[int]
+    sha256: Optional[Text]
+
 
 CACHE_PREFIX = "act-workers"
 
@@ -48,16 +62,16 @@ class URLCache:
         cache_dir = worker.get_cache_dir(cache_prefix, create=True)
         self.cache: sqlite3.Connection = get_db_cache(cache_dir)
 
-    def query_cache(self, url: Text) -> Tuple[Optional[int], Optional[Text], datetime.datetime]:
+    def query_cache(self, url: Text) -> CacheResponse:
         """ Query cache for a specific url """
         cursor = self.cache.cursor()
 
         res = cursor.execute("SELECT * FROM report_hash WHERE url = ?", [url.strip()]).fetchall()
 
         if not res:
-            return (None, None, datetime.datetime.utcfromtimestamp(0))
+            return CacheResponse(None, None, datetime.datetime.utcfromtimestamp(0))
 
-        return (res[0][1], res[0][2], datetime.datetime.utcfromtimestamp(res[0][3]))
+        return CacheResponse(res[0][1], res[0][2], datetime.datetime.utcfromtimestamp(res[0][3]))
 
     def update_cache(self, url: Text, status_code: Optional[int], report_hash: Optional[Text]) -> None:
         """ Add url/hash to cache """
@@ -77,7 +91,7 @@ class URLCache:
 
         self.cache.commit()
 
-    def url_sha256(self, url: Text) -> Tuple[Optional[int], Optional[Text]]:
+    def url_sha256(self, url: Text) -> UrlContentHash:
         "Retrieve URL and return sha256 of content. Returns None if request fails."
 
         sha256 = None
@@ -95,9 +109,9 @@ class URLCache:
         except Exception as err:  # pylint: disable=broad-except
             info("Unknown exception downloading {}: {}".format(url, err))
 
-        return (status_code, sha256)
+        return UrlContentHash(status_code, sha256)
 
-    def get(self, url: Text) -> Optional[Text]:
+    def query_download_update(self, url: Text) -> Optional[Text]:
         """
 
         Query cache for url. If not found in url, or cache entry is old, download content
@@ -106,18 +120,20 @@ class URLCache:
 
         """
 
-        (status_code, report_hash, added) = self.query_cache(url)
+        cache = self.query_cache(url)
 
         now = datetime.datetime.now()
 
-        if report_hash and added > now - datetime.timedelta(days=7):
-            info("URL in cache (with hash found): {}, {}, {}, {}".format(url, report_hash, status_code, time.time()))
-        elif status_code == 404 and added > now - datetime.timedelta(days=7):
-            info("URL in cache (last status was 404): {}, {}, {}, {}".format(url, report_hash, status_code, time.time()))
-        elif added > now - datetime.timedelta(days=2):
-            info("URL in cache (Unknown status): {}, {}, {}, {}".format(url, report_hash, status_code, time.time()))
+        if cache.report_hash and cache.added > now - datetime.timedelta(days=7):
+            info("URL in cache (with hash found): {}, {}, {}, {}".format(url, cache.report_hash, cache.status_code, time.time()))
+        elif (not cache.report_hash) and (cache.status_code == 404) and (cache.added > now - datetime.timedelta(days=7)):
+            info("URL in cache (last status was 404): {}, {}, {}, {}".format(url, cache.report_hash, cache.status_code, time.time()))
+        elif (not cache.report_hash) and (cache.added > now - datetime.timedelta(days=2)):
+            # status_code != 404 - attempt new download
+            info("URL in cache (Unknown status): {}, {}, {}, {}".format(url, cache.report_hash, cache.status_code, time.time()))
         else:
-            (status_code, report_hash) = self.url_sha256(url)
-            self.update_cache(url, status_code, report_hash)
+            query = self.url_sha256(url)
+            self.update_cache(url, query.status_code, query.sha256)
+            return query.sha256
 
-        return report_hash
+        return cache.report_hash
