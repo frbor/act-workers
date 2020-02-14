@@ -82,7 +82,7 @@ def handle_argus_event_tactic(
         output_format: Text) -> None:
     """ Handle MITRE ATT&CK tactic in events """
 
-    for tactic in properties["mitreAttack.technique"].split("\n"):
+    for tactic in properties["mitreAttack.tactic"].split("\n"):
         chain = act.api.fact.fact_chain(
             actapi.fact("classifiedAs")
             .source("event_id", event)
