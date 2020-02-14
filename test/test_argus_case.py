@@ -55,6 +55,16 @@ def test_argus_case_facts(capsys, caplog) -> None:  # type: ignore
         .destination("event", event_id)
     )
 
+    # Fact chain from event through technique to tactic
+    tactic_chain = act.api.fact.fact_chain(
+        api.fact("classifiedAs")
+        .source("event", event_id)
+        .destination("technique", "*"),
+        api.fact("implements")
+        .source("technique", "*")
+        .destination("tactic", "Discovery")
+    )
+
     sha256 = "01ba4719c80b6fe911b091a7c05124b64eeece964e09c058ef8f9805daca546b"
 
     fact_assertions = [
@@ -63,7 +73,6 @@ def test_argus_case_facts(capsys, caplog) -> None:  # type: ignore
         api.fact("detects").source("signature", signature).destination("event", event_id),
         api.fact("name", "Infected host").source("incident", incident_id),
         api.fact("observedIn").source("uri", uri1).destination("event", event_id),
-        api.fact("classifiedAs").source("event", event_id).destination("technique", "Account Discovery"),
         api.fact("observedIn").source("uri", uri2).destination("event", event_id),
         api.fact("observedIn").source("uri", uri3).destination("event", event_id),
         api.fact("componentOf").source("fqdn", "test-domain.com").destination("uri", uri1),
@@ -95,4 +104,7 @@ def test_argus_case_facts(capsys, caplog) -> None:  # type: ignore
         assert str(fact_assertion) not in facts
 
     for fact_assertion in md5_chain:
+        assert str(fact_assertion) in facts
+
+    for fact_assertion in tactic_chain:
         assert str(fact_assertion) in facts

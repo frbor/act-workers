@@ -85,7 +85,7 @@ def handle_argus_event_tactic(
     for tactic in properties["mitreAttack.tactic"].split("\n"):
         chain = act.api.fact.fact_chain(
             actapi.fact("classifiedAs")
-            .source("event_id", event)
+            .source("event", event_id)
             .destination("technique", "*"),
             actapi.fact("implements")
             .source("technique", "*")
