@@ -23,6 +23,7 @@ def main(actapi: act.api.Act) -> None:
 
         fact = actapi.fact(**data)
         try:
+            # Handle fact will modify the fact object, so we send a copy
             act.api.helpers.handle_fact(copy.deepcopy(fact))
         except act.api.base.ValidationError as err:
             warning("ValidationError while storing objects: %s" % err)
