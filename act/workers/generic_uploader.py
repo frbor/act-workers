@@ -3,6 +3,7 @@
 """General ACT backend uploader. Reads facts as JSON
 from the stdin, uploading accordingly"""
 
+import copy
 import json
 import sys
 import traceback
@@ -22,7 +23,7 @@ def main(actapi: act.api.Act) -> None:
 
         fact = actapi.fact(**data)
         try:
-            act.api.helpers.handle_fact(fact)
+            act.api.helpers.handle_fact(copy.deepcopy(fact))
         except act.api.base.ValidationError as err:
             warning("ValidationError while storing objects: %s" % err)
         except act.api.base.ResponseError as err:
