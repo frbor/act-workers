@@ -173,13 +173,15 @@ def asn_query(ip_list: List[str], cache: sqlite3.Connection) -> Generator[Tuple[
     for ip in query_ip:
         try:
             # Retry if we have DNS issues towards asn.shadowserver.org
-            retry = 1
+            retry = 0
             success = False
-            while not success and retry <= 7:
+            while not success:
                 try:
                     asn_record = asnwhois.result[ip]
                     success = True
                 except socket.gaierror:
+                    if retry >= 8:
+                        raise
                     # Sleep 2, 4, 8, ... 128 seconds
                     time.sleep(2 ** retry)
                     retry += 1
