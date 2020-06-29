@@ -182,7 +182,7 @@ def asn_query(ip_list: List[str], cache: sqlite3.Connection) -> Generator[Tuple[
                 except socket.gaierror:
                     if retry >= 8:
                         raise
-                    # Sleep 2, 4, 8, ... 128 seconds
+                    # Sleep 1, 2, 4, 8, ... 128 seconds
                     time.sleep(2 ** retry)
                     retry += 1
         except QueryError:
