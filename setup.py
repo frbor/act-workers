@@ -30,6 +30,7 @@ setup(
             'act-country-regions = act.workers.country_regions:main_log_error',
             'act-misp-feeds = act.workers.misp_feeds:main_log_error',
             'act-scio = act.workers.scio:main_log_error',
+            'act-scio2 = act.workers.scio2:main_log_error',
             'act-uploader = act.workers.generic_uploader:main_log_error',
             'act-url-shorter-unpack = act.workers.url_shorter_unpack:main_log_error',
             'act-shadowserver-asn = act.workers.shadowserver_asn:main_log_error',
