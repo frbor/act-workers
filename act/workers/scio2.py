@@ -115,7 +115,7 @@ def add_indicators_to_act(actapi: act.api.Act,
             actapi.fact("represents")
             .source("hash", sha256)
             .destination("content", sha256),
-            output_format=output_format
+            output_format
         )
 
     # Add emails as URI components
