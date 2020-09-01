@@ -13,6 +13,8 @@ def test_scio2_facts(capsys) -> None:  # type: ignore
     api = act.api.Act("", None, "error")
     act.api.helpers.handle_fact.cache_clear()
 
+    scio2.add_to_act(api, doc, output_format="str")
+
     captured = capsys.readouterr()
 
     facts = set(captured.out.split("\n"))
