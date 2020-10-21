@@ -43,7 +43,7 @@ def process() -> None:
     lines = [line.strip() for line in sys.stdin]
 
     if len(lines) > 1:
-        sys.stderr.write("Warning: only first line will be used\n")
+        sys.stderr.write(f"Warning: Got {len(lines)} lines, only first line will be used\n")
 
     if not lines[0]:
         # Empty data
