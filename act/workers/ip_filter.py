@@ -60,23 +60,23 @@ def process() -> None:
             #  reserved for multicast use. See RFC 3171 (for IPv4) or RFC 2373 (for IPv6).
             continue
 
-        elif ip.is_private:
+        if ip.is_private:
             # private networks. See RFC 1918 (for IPv4) or RFC 4193 (for IPv6).
             continue
 
-        elif ip.is_unspecified:
+        if ip.is_unspecified:
             # unspecified. See RFC 5735 (for IPv4) or RFC 2373 (for IPv6).
             continue
 
-        elif ip.is_reserved:
+        if ip.is_reserved:
             # IETF reserved.
             continue
 
-        elif ip.is_loopback:
+        if ip.is_loopback:
             # loopback address. See RFC 3330 (for IPv4) or RFC 2373 (for IPv6).
             continue
 
-        elif ip.is_link_local:
+        if ip.is_link_local:
             # link-local usage. See RFC 3927.
             continue
 
