@@ -45,45 +45,45 @@ def process() -> None:
     if len(lines) > 1:
         sys.stderr.write("Warning: only first line will be used\n")
 
-    for line in lines:
-        if not lines:
-            sys.exit(1)
+    if not lines[0]:
+        # Empty data
+        sys.exit(1)
 
-        print(line)
+    print(lines[0])
 
-        try:
-            ip = ipaddress.ip_address(line)
-        except ValueError:
-            # No IP address
-            sys.exit(0)
+    try:
+        ip = ipaddress.ip_address(lines[0])
+    except ValueError:
+        # No IP address
+        sys.exit(0)
 
-        if ip.is_multicast:
-            #  reserved for multicast use. See RFC 3171 (for IPv4) or RFC 2373 (for IPv6).
-            sys.exit(2)
+    if ip.is_multicast:
+        #  reserved for multicast use. See RFC 3171 (for IPv4) or RFC 2373 (for IPv6).
+        sys.exit(2)
 
-        elif ip.is_private:
-            # private networks. See RFC 1918 (for IPv4) or RFC 4193 (for IPv6).
-            sys.exit(3)
+    elif ip.is_private:
+        # private networks. See RFC 1918 (for IPv4) or RFC 4193 (for IPv6).
+        sys.exit(3)
 
-        elif ip.is_unspecified:
-            # unspecified. See RFC 5735 (for IPv4) or RFC 2373 (for IPv6).
-            sys.exit(4)
+    elif ip.is_unspecified:
+        # unspecified. See RFC 5735 (for IPv4) or RFC 2373 (for IPv6).
+        sys.exit(4)
 
-        elif ip.is_reserved:
-            # IETF reserved.
-            sys.exit(5)
+    elif ip.is_reserved:
+        # IETF reserved.
+        sys.exit(5)
 
-        elif ip.is_loopback:
-            # loopback address. See RFC 3330 (for IPv4) or RFC 2373 (for IPv6).
-            sys.exit(6)
+    elif ip.is_loopback:
+        # loopback address. See RFC 3330 (for IPv4) or RFC 2373 (for IPv6).
+        sys.exit(6)
 
-        elif ip.is_link_local:
-            # link-local usage. See RFC 3927.
-            sys.exit(7)
+    elif ip.is_link_local:
+        # link-local usage. See RFC 3927.
+        sys.exit(7)
 
-        else:
-            # Other IP address
-            sys.exit(0)
+    else:
+        # Other IP address
+        sys.exit(0)
 
 
 def main() -> None:
