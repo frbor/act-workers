@@ -52,7 +52,7 @@ def main(actapi: act.api.Act, timing: bool = False) -> None:
     if timing:
         warning(
             "Total time (count:%s,total:%s,mean:%s,min:%s,max:%s)",
-            round(len(handle_fact_time), 2),
+            len(handle_fact_time),
             round(sum(handle_fact_time), 2),
             round(sum(handle_fact_time)/len(handle_fact_time), 2),
             round(min(handle_fact_time), 2),
