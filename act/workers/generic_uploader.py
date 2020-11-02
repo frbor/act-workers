@@ -61,7 +61,7 @@ def main(actapi: act.api.Act, timing: bool = False) -> None:
             round(sum(handle_fact_time)/len(handle_fact_time), 2),
             round(min(handle_fact_time), 2),
             round(max(handle_fact_time), 2),
-            ",".join(origins)
+            "+".join(origins)
         )
 
 
