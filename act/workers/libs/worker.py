@@ -124,7 +124,9 @@ def handle_args(parser: argparse.ArgumentParser) -> argparse.Namespace:
             if ":" not in header:
                 raise act.api.base.ArgumentError(f"No ':' in header, http header: {header}")
             header_key, header_val = header.split(":", 1)
-            headers[header_key.strip()] = header_val.strip().replace("\\,", ",")
+            header_key = header_key.strip().replace("\\,", ",")
+            header_val = header_val.strip().replace("\\,", ",")
+            headers[header_key] = header_val
         args.http_header = headers
 
     return cast(argparse.Namespace, args)
