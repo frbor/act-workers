@@ -144,6 +144,13 @@ def process(api: act.api.Act, args: argparse.Namespace) -> None:
         # last_update from the event
         last_update = cast(int, event["lastUpdatedTimestamp"])
 
+        if args.organization:
+            try:
+                api.config.organization = args.organization.format(**event)
+            except KeyError:
+                error(f"Unable to get organization from template: {args.organization}: {event}")
+                continue
+
         # Create facts from event
         argus.handle_argus_event(api, event, content_props, hash_props, args.output_format)
 
