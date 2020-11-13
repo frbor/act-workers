@@ -77,17 +77,6 @@ The access mode can be explicit set with `--access-mode`, e.g. like this, to set
 
 All workers support the optional arguments `--organization` If they are not specified, facts will be added with the organization of the origin or the user performing the upload to the platform (if not set by the origin.
 
-Some workers supports templating in the `organization` option using python format(), with input from the data used to create the facts.
-
-E.g. with `{"org": "my-organization", ...}` you can use `--organization "{org}"` to dynamically set organization to the value of `org`. Examples where this is supported in the workers are given below.
-
-## argus-case
-
-Use customer shortname as organization for all facts:
-
-```
---organization "{customerInfo[shortName]}"
-```
 
 # Worker usage
 
