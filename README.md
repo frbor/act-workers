@@ -67,7 +67,7 @@ Origin deleted: e5a9792e-78c7-4190-9275-27616be47ca8
 # Access mode
 By default, all facts will have access-mode "RoleBased", which means that the user needs access to the organization specified when creating the facts.
 
-The access mode can be explicit set with `--access-mode`, e.g. like this, to set all facts wot Public access mode:
+The access mode can be explicit set with `--access-mode`, e.g. like this, to set all facts to Public access mode:
 
 ```
 --access-mode Public
@@ -77,11 +77,13 @@ The access mode can be explicit set with `--access-mode`, e.g. like this, to set
 
 All workers support the optional arguments `--organization` If they are not specified, facts will be added with the organization of the origin or the user performing the upload to the platform (if not set by the origin.
 
-Some workers supports templating in the `organization` option, with input from the data used to create the facts.
+Some workers supports templating in the `organization` option using python format(), with input from the data used to create the facts.
+
+E.g. with `{"org": "my-organization", ...}` you can use `--organization "{org}"` to dynamically set organization to the value of `org`. Examples where this is supported in the workers are given below.
 
 ## argus-case
 
-Use customer shortname as organization:
+Use customer shortname as organization for all facts:
 
 ```
 --organization "{customerInfo[shortName]}"
